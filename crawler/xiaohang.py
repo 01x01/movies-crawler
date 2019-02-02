@@ -12,7 +12,7 @@ logger = CustomLog(__name__).getLogger()
 search_url = "https://movie.xhboke.com/index.php/vod/search.html"
 root_url = "https://movie.xhboke.com"
 
-def status_ok(r,status_code):
+def status(r,status_code):
     if r.status_code == status_code:
         return True
     
@@ -100,7 +100,7 @@ def get_video(link):
 def xhrun(movies_name):
     sprint("正在小航影院进行搜索....")
     r = search(movies_name)
-    if status_ok(r,200):
+    if status(r,200):
         content = get_search_result(r)
         sprint(content)
         with open(os.path.join("download",movies_name+".txt"),'w',encoding='utf-8') as f:

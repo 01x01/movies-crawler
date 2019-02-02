@@ -1,5 +1,6 @@
 import argparse,os
 from crawler.xiaohang import xhrun
+from threading import Thread
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n','--name',help="The name of movies",dest="name",action='store',type=str)
@@ -7,13 +8,17 @@ def main():
     args = parser.parse_args()
     if not os.path.exists("download"):
         os.mkdir("download")
-    xhrun(args.name)
 
+    ts = [
+        Thread(target=xhrun,args=(args.name,)),
+    ]
 
-
-
-
-
+    for t in ts:
+        t.start()
+    
+    for t in ts:
+        t.join()
+    
 
 if __name__ == "__main__":
     main()
