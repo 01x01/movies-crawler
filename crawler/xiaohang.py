@@ -46,7 +46,8 @@ def get_search_result(r):
     for name,result in zip(titles,results):
         link = result['href']
         title = name.text
-        Q.put(zip(link, title))
+        print("title: %s | link: %s" % (title, link))
+        Q.put((link, title))
 
 
 def get_content(i):
@@ -117,11 +118,12 @@ def xhrun(movies_name):
     r = search(movies_name)
     if status(r,200):
         get_search_result(r)
-        ts = [threading.Thread(target=get_content,args=(i,)) for i in range(20)]
-        for t in ts:
-            t.start()
-        for t in ts:
-            t.join()
+        get_content()
+        # ts = [threading.Thread(target=get_content,args=(i,)) for i in range(20)]
+        # for t in ts:
+        #     t.start()
+        # for t in ts:
+        #     t.join()
     else:
         fprint("Error, status code is %s " % r.status_code)
    
