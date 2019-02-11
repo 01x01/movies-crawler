@@ -6,7 +6,11 @@ from bs4 import BeautifulSoup
 from urllib.parse import quote
 from utils.customLogger import CustomLog
 import re,os
-from utils.vprint import sprint,fprint 
+from utils.vprint import sprint,fprint
+import threading
+import queue
+
+Q = queue.Queue()
 
 logger = CustomLog(__name__).getLogger()
 search_url = "https://movie.xhboke.com/index.php/vod/search.html"
@@ -36,33 +40,43 @@ def search(movies_name):
 def get_search_result(r):
     html = r.text
     soup = BeautifulSoup(html,"html.parser")
-    results = soup.find_all('a',class_="stui-vodlist__thumb lazyload")
-    content = ""
-    
-    for result in results:
+    results = soup.find_all('a',class_="btn-play btn-primary")
+
+    titles = soup.find_all('h3',class_="title text-overflow")
+    for name,result in zip(titles,results):
         link = result['href']
-        title = result['title']
+        title = name.text
+        Q.put(zip(link, title))
+
+
+def get_content(i):
+    content = ""
+    while True:
+        link, title = Q.get()
         links = get_playlist(link)
         content += title + "\n"
         for url in links:
             url = url['href']
             t,u = get_video(url)
             m3u8_url = get_m3u8(u)
-            content += t+": "+m3u8_url + '\n'
-    
-    return content 
+            content += t+" | "+m3u8_url + '\n'
+
+    sprint("线程{}获取到内容：{}".format(i,content))
+    with open(os.path.join("download", movies_name + ".txt"), 'a', encoding='utf-8') as f:
+        f.write(content)
+    # return content
 
 # 获取真实的视频链接
 def get_m3u8(url):
-    url = re.sub("\"","",url)
+    url = re.sub("\"", "", url)
     if not re.search('m3u8',url):
         r = requests.get(url,verify=False)
-        res = re.search("var main = \"(.*?)\"",r.text)
+        res = re.search("var main = \"(.*?)\"", r.text)
         res.group(1)
-        link = re.sub("share/.*",res.group(1),url)
+        link = re.sub("share/.*", res.group(1),url)
     else:
         link = url
-
+    #print("m3u8 links：",link)
     return link 
 
 # 得到播放列表
@@ -74,8 +88,9 @@ def get_playlist(link):
     r = requests.get(root_url+link,verify=False)
     html = r.text
     soup = BeautifulSoup(html,'html.parser')
-    div = soup.find(id='playlist1')
-    links = div.find_all('a')
+    ul = soup.find(id='con_playlist_1')
+    links = ul.find_all('a')
+    #print("playlist:",links)
     return links 
 
 
@@ -101,9 +116,13 @@ def xhrun(movies_name):
     sprint("正在小航影院进行搜索....")
     r = search(movies_name)
     if status(r,200):
-        content = get_search_result(r)
-        sprint(content)
-        with open(os.path.join("download",movies_name+".txt"),'w',encoding='utf-8') as f:
-            f.write(content)
+        get_search_result(r)
+        ts = [threading.Thread(target=get_content,args=(i,)) for i in range(20)]
+        for t in ts:
+            t.start()
+        for t in ts:
+            t.join()
+    else:
+        fprint("Error, status code is %s " % r.status_code)
    
 

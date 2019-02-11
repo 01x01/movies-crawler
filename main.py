@@ -9,15 +9,17 @@ def main():
     if not os.path.exists("download"):
         os.mkdir("download")
 
-    ts = [
-        Thread(target=xhrun,args=(args.name,)),
-    ]
+    # ts = [
+    #     Thread(target=xhrun,args=(args.name,)),
+    # ]
+    #
+    # for t in ts:
+    #     t.start()
+    #
+    # for t in ts:
+    #     t.join()
+    xhrun(args.name)
 
-    for t in ts:
-        t.start()
-    
-    for t in ts:
-        t.join()
     
 
 if __name__ == "__main__":
