@@ -2,3 +2,5 @@ download
 log
 .vscode
 .DS_Store
+.idea
+__pycache__
